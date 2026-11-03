@@ -113,9 +113,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: Formater-win-x64
       - uses: softprops/action-gh-release@v2
         with:
+          name: Formater ${{ github.ref_name }}
+          body_path: docs/release-notes/${{ github.ref_name }}.md
           files: Formater.exe

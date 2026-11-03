@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     name: Tests and visual check (Linux)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -19,14 +19,16 @@ jobs:
           node-version: 22
       - name: Unit tests
         run: dotnet test tests/Formater.Core.Tests -c Release
-      - name: Install Chromium, poppler and ImageMagick
+      - name: Install Chromium, poppler, Pillow and NumPy
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq poppler-utils imagemagick
+          sudo apt-get install -y -qq poppler-utils python3-pil python3-numpy
           npm install --prefix tools
           npx --prefix tools playwright install --with-deps chromium
       - name: Render PDFs and compare with the reference
         run: tools/visual-check.sh out
+        env:
+          PYTHON: /usr/bin/python3
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -73,7 +75,7 @@ jobs:
 
   windows-check:
     name: Compare the Windows PDF with the reference
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: windows
     steps:
       - uses: actions/checkout@v4
@@ -87,24 +89,27 @@ jobs:
         with:
           name: windows-pdfs
           path: smoke
-      - name: Install Chromium, poppler and ImageMagick
+      - name: Install Chromium, poppler, Pillow and NumPy
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq poppler-utils imagemagick
+          sudo apt-get install -y -qq poppler-utils python3-pil python3-numpy
           npm install --prefix tools
           npx --prefix tools playwright install --with-deps chromium
       - name: Compare
-        run: WINDOWS_PDF=smoke/sample_data.pdf tools/visual-check.sh out
+        run: tools/visual-check.sh out
+        env:
+          PYTHON: /usr/bin/python3
+          WINDOWS_PDF: smoke/sample_data.pdf
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: windows-vs-reference
-          path: out/windows_sample_data*.png
+          path: out/windows_sample_data-vs-reference.png
 
   release:
     name: Attach Formater.exe to the release
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [windows, windows-check]
     permissions:
       contents: write

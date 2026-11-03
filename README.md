@@ -112,7 +112,7 @@ dotnet publish src/Formater.App -c Release -r win-x64 -p:DebugType=none -o publi
 tools/visual-check.sh                                 # renders PDFs and compares with the reference
 ```
 
-`tools/visual-check.sh` needs Node with Playwright (`npm install --prefix tools`), `pdftoppm` and ImageMagick. It
+`tools/visual-check.sh` needs Node with Playwright (`npm install --prefix tools`), `pdftoppm`, and Python 3 with Pillow and NumPy. It
 prints `docs/handoff/sample_data.json` with Chromium and compares it at 150 dpi with the reference PDF. Everything
 matches except the logo lettering: the reference used live Montserrat text, while the app uses the outlined
 `logo-banner.svg` that SPEC.md asks for. That difference is about 2,400 pixels, all inside the banner, and can't be

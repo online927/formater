@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Renders the reference fixture and the edge cases to PDF with Chromium and compares the fixture
 # with docs/handoff/reference/Quotation-100186.pdf (SPEC §10). Needs: dotnet, node + playwright,
-# poppler-utils (pdftoppm) and ImageMagick (compare/convert).
+# poppler-utils (pdftoppm) and Python 3 with Pillow and NumPy.
 # usage: tools/visual-check.sh [out-dir]
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,12 +25,9 @@ node "$ROOT/tools/print-pdf.cjs" "${pairs[@]}"
 
 compare_to_reference() { # <pdf> <label>
   pdftoppm -r 150 -png -singlefile "$1" "$OUT/$2"
-  pdftoppm -r 150 -png -singlefile "$ROOT/docs/handoff/reference/Quotation-100186.pdf" "$OUT/reference"
-  local diff
-  diff=$(compare -metric AE -fuzz 10% "$OUT/$2.png" "$OUT/reference.png" "$OUT/$2-diff.png" 2>&1 || true)
-  convert "$OUT/reference.png" "$OUT/$2.png" +append -resize 50% "$OUT/$2-vs-reference.png"
-  echo "$2: $diff pixels differ from the reference (limit $LIMIT)"
-  if [ "${diff%%.*}" -gt "$LIMIT" ]; then echo "FAIL: $2 does not match the reference"; return 1; fi
+  pdftoppm -r 150 -png -singlefile "$ROOT/docs/handoff/reference/Quotation-100186.pdf" "$OUT/reference" 2>/dev/null
+  echo "$2 compared with the reference (limit $LIMIT):"
+  "${PYTHON:-python3}" "$ROOT/tools/compare.py" "$OUT/$2.png" "$OUT/reference.png" --limit "$LIMIT" --side "$OUT/$2-vs-reference.png"
 }
 
 compare_to_reference "$OUT/sample_data.pdf" sample_data

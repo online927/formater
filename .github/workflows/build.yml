@@ -40,7 +40,6 @@ jobs:
   windows:
     name: Formater.exe (Windows)
     runs-on: windows-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4

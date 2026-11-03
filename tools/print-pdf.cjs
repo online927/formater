@@ -11,7 +11,9 @@ const { chromium } = require("playwright");
     process.exit(2);
   }
   const browser = await chromium.launch();
-  const page = await browser.newPage();
+  // Device scale 2 turns on fractional glyph positioning in Linux Chromium (at scale 1 every glyph
+  // is rounded to a whole pixel and long lines drift by points). The PDF itself is the same size.
+  const page = await browser.newPage({ deviceScaleFactor: 2 });
   for (let i = 0; i < args.length; i += 2) {
     await page.goto("file://" + path.resolve(args[i]));
     await page.waitForFunction(() => ["rendered", "font-error"].includes(document.body.dataset.state));

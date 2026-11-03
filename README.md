@@ -116,7 +116,8 @@ tools/visual-check.sh                                 # renders PDFs and compare
 prints `docs/handoff/sample_data.json` with Chromium and compares it at 150 dpi with the reference PDF. Everything
 matches except the logo lettering: the reference used live Montserrat text, while the app uses the outlined
 `logo-banner.svg` that SPEC.md asks for. That difference is about 2,400 pixels, all inside the banner, and can't be
-seen by eye. It also renders the edge cases in `tests/visual/` and the examples:
+seen by eye. The CI build also exports `sample_data.json` with the real `Formater.exe` on Windows and runs the same
+comparison: about 3,500 pixels (0.16%), again almost all in the banner. It also renders the edge cases in `tests/visual/` and the examples:
 - 3 items
 - CGST + SGST
 - empty Other Ref

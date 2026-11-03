@@ -37,6 +37,7 @@ public static class Calculator
             Buyer = new RenderParty { Label = q.Buyer.Label, Name = q.Buyer.Name, Lines = [.. q.Buyer.Lines] },
             ShowDiscount = showDiscount,
             TermsAndConditions = [.. q.TermsAndConditions],
+            SignOff = [.. q.SignOff],
         };
 
         for (var i = 0; i < q.Items.Count; i++)

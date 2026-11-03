@@ -213,10 +213,20 @@
     var nameWidth = cols.qty - 45 - 86.3;
     var rows = (d.items || []).map(function (it) { return prepareRow(it, nameWidth); });
     var totals = d.totals || [];
+    // Terms & conditions and sign-off stack upward from just above the footer rule (SPEC §6).
     var tc = wrapAll(d.termsAndConditions, 8, false, TC_WIDTH);
-    var tcTop = 752.0 - 10.5 * (tc.length - 2);
+    var signOff = wrapAll(d.signOff, 8, false, TC_WIDTH);
+    var bottom = 772.5, soTop = bottom;
+    if (signOff.length) {
+      soTop = bottom - 10.5 * (signOff.length - 1);
+      bottom = soTop - 18.0;
+    } else {
+      bottom -= 21.0;
+    }
+    var tcTop = bottom - 10.5 * (tc.length - 1);
+    var blockTop = tc.length ? tcTop - 14.0 : signOff.length ? soTop : ROW_LIMIT + 12;
     var totalsHeight = 9.2 + 25.4 * Math.max(totals.length - 1, 0) + 9;
-    var lastLimit = tc.length ? tcTop - 14 - 12 : ROW_LIMIT;
+    var lastLimit = blockTop - 12;
 
     // Page 1 header first: its height decides where the table starts.
     var pages = [];
@@ -261,6 +271,7 @@
           text(pg, 46.4, tcTop - 14.0, "Terms & Conditions", 10);
           tc.forEach(function (s, i) { text(pg, 46.4, tcTop + 10.5 * i, s, 8); });
         }
+        signOff.forEach(function (s, i) { text(pg, 46.4, soTop + 10.5 * i, s, 8); });
       }
       text(pg, 562.8, 801.0, String(index + 1), 6, false, PAGE_NO, "right");
       finishPage(pg);

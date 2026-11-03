@@ -1,6 +1,6 @@
 # Quotation PDF — Build Specification (T.SAIFUDDIN & CO)
 
-**Goal:** build an app that takes quotation data (seller, buyer, items, taxes, terms) and exports a one-page A4 PDF that is **visually identical** to `reference/Quotation-100186.pdf` when given `sample_data.json`.
+**Goal:** build an app that takes quotation data (seller, buyer, items, taxes, terms and conditions, sign-off) and exports a one-page A4 PDF that is **visually identical** to `reference/Quotation-100186.pdf` when given `sample_data.json`.
 
 ## Package contents
 
@@ -88,16 +88,16 @@ The table below is the reference instance generated from `sample_data.json`. Row
 | Text (reference value) | Align | x | Baseline y | Weight | Size (pt) | Colour |
 |---|---|---|---|---|---|---|
 | T.SAIFUDDIN & CO | left | 46.4 | 145.3 | Bold | 9 | `#333333` |
-| No.72 | left | 46.4 | 155.0 | Regular | 8 | `#333333` |
-| N.R.Road | left | 46.4 | 164.2 | Regular | 8 | `#333333` |
-| Bangalore | left | 46.4 | 173.4 | Regular | 8 | `#333333` |
-| 560002 Karnataka | left | 46.4 | 182.7 | Regular | 8 | `#333333` |
-| India | left | 46.4 | 191.9 | Regular | 8 | `#333333` |
+| No.72 N.R.Road | left | 46.4 | 155.0 | Regular | 8 | `#333333` |
+| Bangalore | left | 46.4 | 164.2 | Regular | 8 | `#333333` |
+| Karnataka 560002 | left | 46.4 | 173.4 | Regular | 8 | `#333333` |
+| +917019740620 | left | 46.4 | 182.7 | Regular | 8 | `#333333` |
+| +919739394657 | left | 46.4 | 191.9 | Regular | 8 | `#333333` |
 | GSTIN 29AADFT8885H1ZF | left | 46.4 | 201.1 | Regular | 8 | `#333333` |
-| Quotation | right | 559.9 | 160.3 | Regular | 24 | `#333333` |
+| Quotation/Proforma | right | 559.9 | 160.3 | Regular | 24 | `#333333` |
 | Ref No. 100186 | right | 559.8 | 174.0 | Bold | 10 | `#333333` |
 | Other Ref: R | right | 559.8 | 187.0 | Bold | 10 | `#333333` |
-| Buyer | left | 46.4 | 236.3 | Regular | 10 | `#333333` |
+| Buyer/Consignee | left | 46.4 | 236.3 | Regular | 10 | `#333333` |
 | BuyersHub | left | 46.4 | 246.8 | Bold | 9 | `#333333` |
 | Plot 27 , PRT Colony , Karmanghat | left | 46.4 | 256.5 | Regular | 8 | `#333333` |
 | Hyderabad Telangana 500079 | left | 46.4 | 265.7 | Regular | 8 | `#333333` |
@@ -107,8 +107,6 @@ The table below is the reference instance generated from `sample_data.json`. Row
 | sales@buyershub.org.in | left | 46.4 | 302.6 | Regular | 8 | `#333333` |
 | Date : | right | 460.3 | 288.7 | Regular | 10 | `#333333` |
 | 02 Nov 2026 | right | 559.9 | 287.8 | Regular | 8 | `#333333` |
-| Terms : | right | 460.3 | 307.7 | Regular | 10 | `#333333` |
-| Against Delivery | right | 559.8 | 306.9 | Regular | 8 | `#333333` |
 | S.No | left | 50.9 | 344.6 | Regular | 9 | `#FFFFFF` |
 | Item & Description | left | 86.3 | 344.6 | Regular | 9 | `#FFFFFF` |
 | Qty | right | 419.2 | 344.6 | Regular | 9 | `#FFFFFF` |
@@ -128,10 +126,14 @@ The table below is the reference instance generated from `sample_data.json`. Row
 | 10,809.90 | right | 553.1 | 441.9 | Regular | 9 | `#000000` |
 | Total | right | 451.8 | 467.3 | Bold | 9 | `#000000` |
 | ₹70,864.90 | right | 553.1 | 467.3 | Bold | 9 | `#000000` |
-| Terms & Conditions | left | 46.4 | 746.5 | Regular | 10 | `#333333` |
-| 1. Payment: 100% Against Proforma | left | 46.4 | 758.8 | Regular | 8 | `#333333` |
-| 2. Packing and forwarding charges extra | left | 46.4 | 769.3 | Regular | 8 | `#333333` |
+| Regards, | left | 46.4 | 758.3 | Regular | 8 | `#333333` |
+| Name, | left | 46.4 | 768.8 | Regular | 8 | `#333333` |
+| Tsaifuddin and Company | left | 46.4 | 779.3 | Regular | 8 | `#333333` |
+| Terms & Conditions | left | 46.4 | 717.5 | Regular | 10 | `#333333` |
+| 1. Payment: 100% Against Proforma | left | 46.4 | 729.8 | Regular | 8 | `#333333` |
+| 2. Packing and forwarding charges extra | left | 46.4 | 740.3 | Regular | 8 | `#333333` |
 | 1 | right | 562.8 | 806.1 | Regular | 6 | `#AAAAAA` |
+
 **Which values are data-driven:**
 - **Seller block:** the name (bold, 9 pt) and then each `seller.lines[]` entry at 8 pt, every **9.22 pt** down.
 - **Title block:** the title (24 pt, right). `Ref No. {ref_no}` (bold 10, right). `Other Ref: {other_ref}` (bold 10, right) **is omitted entirely** when `other_ref` is empty.
@@ -139,7 +141,8 @@ The table below is the reference instance generated from `sample_data.json`. Row
   - `buyer.label` (10 pt) at baseline 236.3.
   - `buyer.name` (bold 9 pt) at baseline 246.8.
   - Each `buyer.lines[]` entry at 8 pt, starting at baseline 256.5 and every 9.22 pt down.
-- **Date and Terms:** the labels `Date :` and `Terms :` are fixed text at 10 pt, right-aligned to x 460.3. Their values are 8 pt, right-aligned to x ≈ 559.9.
+- **Date:** the label `Date :` is fixed text at 10 pt, right-aligned to x 460.3. The value is 8 pt, right-aligned to x 559.9, at baseline 287.8.
+- **Terms (optional, hidden in the reference):** when `terms` is non-empty, draw `Terms :` (10 pt, right at x 460.3, baseline 307.7) and the value (8 pt, right at x 559.8, baseline 306.9). When `terms` is empty, draw nothing there; the reference has it empty.
 - **Table header labels:** fixed text.
 - **Item rows, totals, and terms and conditions:** see §6.
 - **Page number:** always `1`.
@@ -168,11 +171,19 @@ Let `HEAD_TOP = 328.8` (top of the table header band), and give the first row `r
 - **Each tax in order:** `y += 25.4`, then `{label}` and its amount.
 - **Total:** `y += 25.4`, then `Total` and `₹{total}`, both **bold**. Only this value carries the `₹` sign.
 
-**Terms and conditions,** anchored to the bottom of the page, above the footer rule:
-- `tc_top = 752.0 − 10.5 × (count − 2)`.
-- Heading `Terms & Conditions` (10 pt) at `T = tc_top − 14`.
-- Each line at 8 pt, `T = tc_top + 10.5 × i`.
-- Omit the whole block when the list is empty. Lines are printed as given, and the user types their own numbering.
+**Terms and conditions and sign-off,** stacked upward from just above the footer rule. All lines are 8 pt Regular INK at x 46.4, with a line step of 10.5.
+- Start with `bottom = 772.5`, which is the `T` of the very last line of the block.
+- **Sign-off** (`sign_off[]`, e.g. "Regards," / "Name," / "Tsaifuddin and Company"):
+  - `so_top = bottom − 10.5 × (count − 1)`.
+  - Each line at `T = so_top + 10.5 × i`.
+  - Then `bottom = so_top − 18` (the gap above the sign-off).
+  - If `sign_off` is empty, instead set `bottom = bottom − 21`.
+- **Terms and conditions** (`terms_and_conditions[]`):
+  - `tc_top = bottom − 10.5 × (count − 1)`.
+  - Heading `Terms & Conditions` (10 pt) at `T = tc_top − 14`.
+  - Each line at `T = tc_top + 10.5 × i`.
+  - Omit the heading and lines when the list is empty.
+- Lines are printed exactly as given. The user types their own numbering and punctuation.
 
 ## 7. Calculations and number formatting
 
@@ -198,19 +209,20 @@ Let `HEAD_TOP = 328.8` (top of the table header band), and give the first row `r
 See `sample_data.json`. Fields:
 
 ```
-title                 string    e.g. "Quotation"
+title                 string    e.g. "Quotation/Proforma"
 ref_no                string
 other_ref             string    optional; empty → line hidden
 date                  string    displayed as-is, e.g. "02 Nov 2026" (format DD Mon YYYY)
-terms                 string    e.g. "Against Delivery"
+terms                 string    optional; empty → no Terms line under the date (empty in the reference)
 seller.name           string
-seller.lines[]        string[]  address lines, last one is GSTIN
-buyer.label           string    e.g. "Buyer"
+seller.lines[]        string[]  address + phone lines, last one is GSTIN
+buyer.label           string    e.g. "Buyer/Consignee"
 buyer.name            string
 buyer.lines[]         string[]
 items[]               { name, desc: string[], qty: decimal-string, unit, rate: decimal-string }
 taxes[]               { label, percent: decimal-string }
-terms_and_conditions  string[]
+terms_and_conditions  string[]  printed as typed (include your own "1.", "2.")
+sign_off              string[]  printed as typed under the T&C, e.g. ["Regards,", "Name,", "Tsaifuddin and Company"]
 ```
 
 Keep numbers as strings in transport so no precision is lost.
@@ -218,13 +230,13 @@ Keep numbers as strings in transport so no precision is lost.
 ## 9. Known limits and suggested enhancements
 
 - **Single page:**
-  - About **6 items** fit when each has 2 description lines, or about 8 with 1 line, before the totals reach the terms-and-conditions block.
+  - About **5 items** fit when each has 2 description lines, or about 7 with 1 line, before the totals reach the terms-and-conditions block.
   - The app must either **block** more items or **implement pagination**: repeat the header band, carry totals to the last page, and set the page number to "n".
 - **No text wrapping:**
   - Long item names, address lines or terms run off the edge.
   - Either validate length, or wrap item names within the description column (x 86.3 → ~360) and push the row down.
 - **Logo lettering:** set in Montserrat as a close match to the client's original artwork. If the client supplies an official vector logo, replace the two SVGs and keep the same placement boxes.
-- **"Terms" vs the terms-and-conditions block:** the header `Terms :` field and the bottom block can contradict each other. That is the user's content; don't auto-edit it.
+- **"Terms" vs the terms-and-conditions block:** if the optional `Terms :` field is used, it can contradict the bottom block. That is the user's content; don't auto-edit it.
 
 ## 10. Acceptance test
 
@@ -235,5 +247,5 @@ Keep numbers as strings in transport so no precision is lost.
    - 3 items with mixed description counts.
    - CGST + SGST taxes.
    - Empty `other_ref`.
-   - Empty terms and conditions.
+   - Empty terms and conditions, empty `sign_off`, and a non-empty `terms`.
    - Large amounts (≥ 1 crore) for Indian grouping.

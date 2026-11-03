@@ -18,6 +18,7 @@ public sealed class RenderModel
     public List<RenderItem> Items { get; set; } = [];
     public List<RenderTotal> Totals { get; set; } = [];
     public List<string> TermsAndConditions { get; set; } = [];
+    public List<string> SignOff { get; set; } = [];
 
     private static readonly JsonSerializerOptions Options = new()
     {

@@ -48,9 +48,12 @@ Digital Caliper 150mm, 0%, 2, 3450
 - **Address, GSTIN, phone, e-mail:** each is optional. Lines without a label under the company name are also read as
   its address. A GSTIN, phone number or e-mail on such a line is recognised.
 - **Date** is today's date (`03 Nov 2026`). Override it with `Date: 02/11/2026`.
-- **Terms** default to *Against Delivery*. Override with `Terms: 30 days credit`.
+- **Terms** are empty by default, so there is no `Terms :` line under the date. Add one with
+  `Terms: Against Delivery`.
 - **Terms & Conditions** default to the two lines in Settings. Replace them with `T&C: ...` lines, or a
   `Terms & Conditions:` line followed by the lines. An empty `Terms & Conditions:` section hides the block.
+- **Sign-off** (*Regards, / Name, / Tsaifuddin and Company*) prints under the terms. Put your name in Settings, or
+  replace it for one quotation with a `Sign-off:` line followed by the lines. An empty `Sign-off:` section hides it.
 - **GST is automatic.**
   - A buyer GSTIN starting with the seller's state code (29, Karnataka) gives **CGST 9% + SGST 9%**.
   - Without a GSTIN, a buyer address mentioning Karnataka gives **CGST 9% + SGST 9%**.
@@ -67,10 +70,11 @@ Digital Caliper 150mm, 0%, 2, 3450
 - the document title
 - your state and GST rate
 - the default unit
-- the default Terms and Terms & Conditions
+- the default Terms, Terms & Conditions and sign-off
 - whether the PDF opens after saving
 
-They are stored in `%APPDATA%\Formater\settings.json`. The text you were working on is kept in `draft.txt` there.
+They are stored in `%APPDATA%\Formater\settings.json`. Settings saved by the first version are moved to the
+new format's title, address, buyer heading and Terms, unless you had changed them. The text you were working on is kept in `draft.txt` there.
 
 ### Command line
 
@@ -122,6 +126,7 @@ comparison: about 3,500 pixels (0.16%), again almost all in the banner. It also 
 - CGST + SGST
 - empty Other Ref
 - empty Terms & Conditions
+- Terms shown, with Terms & Conditions and sign-off hidden
 - crore amounts
 - discount with wrapping
 - 24 items over 3 pages

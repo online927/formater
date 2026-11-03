@@ -24,8 +24,10 @@ internal sealed class MainForm : Form
         "                              (optional unit and | separated small lines after the rate)\n\n" +
         "GST is automatic: buyer GSTIN starting 29 (or a Karnataka address) → CGST 9% + SGST 9%,\n" +
         "otherwise IGST 18%. Change it with  GST: IGST,  GST: CGST+SGST,  GST: 12%  or  GST: None.\n\n" +
-        "Also optional: Date: 02/11/2026,  Terms: 30 days credit,  T&C: one line each\n" +
-        "(or a \"Terms & Conditions:\" line followed by the lines). The date is today by default.\n" +
+        "Also optional: Date: 02/11/2026 (today by default),  Terms: Against Delivery (hidden when not given),\n" +
+        "T&C: one line each (or a \"Terms & Conditions:\" line followed by the lines),\n" +
+        "Sign-off: one line each (or a \"Sign-off:\" line followed by the lines). Defaults are in Settings;\n" +
+        "a \"Terms & Conditions:\" or \"Sign-off:\" line followed by an empty line hides that block.\n" +
         "Rows copied from Excel (tab separated) work too.";
 
     private const string ExampleText =

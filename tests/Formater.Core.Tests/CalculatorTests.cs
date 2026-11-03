@@ -17,6 +17,12 @@ public class CalculatorTests
         Assert.False(m.ShowDiscount);
         Assert.Equal("Ref No. 100186", m.RefLine);
         Assert.Equal("Other Ref: R", m.OtherRefLine);
+        Assert.Equal("Quotation/Proforma", m.Title);
+        Assert.Equal("Buyer/Consignee", m.Buyer.Label);
+        Assert.Equal("", m.Terms);
+        Assert.Equal(["Regards,", "Name,", "Tsaifuddin and Company"], m.SignOff);
+        Assert.Equal(["No.72 N.R.Road", "Bangalore", "Karnataka 560002", "+917019740620", "+919739394657",
+                      "GSTIN 29AADFT8885H1ZF"], m.Seller.Lines);
     }
 
     [Fact]

@@ -17,12 +17,13 @@ public class ParserTests
         Assert.True(r.IsValid, string.Join("\n", r.Errors));
         var q = r.Quotation;
         Assert.Equal("BuyersHub", q.Buyer.Name);
-        Assert.Equal("Buyer", q.Buyer.Label);
+        Assert.Equal("Buyer/Consignee", q.Buyer.Label);
         Assert.Empty(q.Buyer.Lines);
         Assert.Equal("100186", q.RefNo);
         Assert.Equal("03 Nov 2026", q.Date);
-        Assert.Equal("Against Delivery", q.Terms);
-        Assert.Equal("Quotation", q.Title);
+        Assert.Equal("", q.Terms);
+        Assert.Equal("Quotation/Proforma", q.Title);
+        Assert.Equal(["Regards,", "Name,", "Tsaifuddin and Company"], q.SignOff);
         Assert.Equal("T.SAIFUDDIN & CO", q.Seller.Name);
         Assert.Equal(2, q.TermsAndConditions.Count);
 
@@ -268,5 +269,23 @@ public class ParserTests
         Assert.Equal("Pcs", r.Quotation.Items[0].Unit);
         Assert.Equal("ME", r.Quotation.Seller.Name);
         Assert.Equal("IGST12 (12%)", r.Quotation.Taxes[0].Label);
+    }
+
+    [Fact]
+    public void Sign_off_lines_replace_the_defaults()
+    {
+        var r = Parse("Company: X\nRef: 1\nA, 0, 1, 1\n\nSign-off:\nRegards,\nAhmed Saifuddin\nTsaifuddin and Company");
+        Assert.Equal(["Regards,", "Ahmed Saifuddin", "Tsaifuddin and Company"], r.Quotation.SignOff);
+        Assert.Equal(2, r.Quotation.TermsAndConditions.Count);
+        Assert.Empty(r.Quotation.Items[0].Desc);
+    }
+
+    [Fact]
+    public void Empty_sections_hide_the_terms_and_the_sign_off()
+    {
+        var r = Parse("Company: X\nRef: 1\nTerms: Against Delivery\nA, 0, 1, 1\n\nTerms & Conditions:\n\nSign-off:\n");
+        Assert.Equal("Against Delivery", r.Quotation.Terms);
+        Assert.Empty(r.Quotation.TermsAndConditions);
+        Assert.Empty(r.Quotation.SignOff);
     }
 }

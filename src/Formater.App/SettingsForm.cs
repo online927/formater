@@ -14,6 +14,7 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _unit = new();
     private readonly TextBox _terms = new();
     private readonly TextBox _tc = Multi(4);
+    private readonly TextBox _signOff = Multi(3);
     private readonly CheckBox _open = new() { Text = "Open the PDF after saving it", AutoSize = true };
     private readonly AppSettings _original;
 
@@ -44,8 +45,9 @@ internal sealed class SettingsForm : Form
         Row(grid, "GST rate %", _gst, "Used unless the text has a line like  GST: 12%");
         Row(grid, "Buyer heading", _buyerLabel, null);
         Row(grid, "Default unit", _unit, "Used when an item line has no unit");
-        Row(grid, "Default Terms", _terms, "Shown next to Terms : unless the text has  Terms: ...");
+        Row(grid, "Default Terms", _terms, "Shown as  Terms :  under the date; leave empty to hide it (as in the reference)");
         Row(grid, "Terms & Conditions", _tc, "One per line, numbered as you want them; used unless the text has T&C lines");
+        Row(grid, "Sign-off", _signOff, "Printed under the terms, one per line, e.g. Regards, / your name / Tsaifuddin and Company");
         grid.Controls.Add(new Label(), 0, grid.RowCount);
         grid.Controls.Add(_open, 1, grid.RowCount++);
 
@@ -100,6 +102,7 @@ internal sealed class SettingsForm : Form
         _unit.Text = s.DefaultUnit;
         _terms.Text = s.DefaultTerms;
         _tc.Text = string.Join("\r\n", s.TermsAndConditions);
+        _signOff.Text = string.Join("\r\n", s.SignOff);
         _open.Checked = s.OpenPdfAfterExport;
     }
 
@@ -114,6 +117,7 @@ internal sealed class SettingsForm : Form
         DefaultUnit = _unit.Text.Trim(),
         DefaultTerms = _terms.Text.Trim(),
         TermsAndConditions = Lines(_tc.Text),
+        SignOff = Lines(_signOff.Text),
         OpenPdfAfterExport = _open.Checked,
         PdfFolder = _original.PdfFolder,
     };

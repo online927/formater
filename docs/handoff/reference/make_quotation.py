@@ -20,17 +20,17 @@ from decimal import Decimal, ROUND_HALF_UP
 # =====================================================================
 # DATA - change these for each quotation
 # =====================================================================
-TITLE      = "Quotation"
+TITLE      = "Quotation/Proforma"
 REF_NO     = "100186"
 OTHER_REF  = "R"                 # set to "" to hide the line
 DATE       = "02 Nov 2026"
-TERMS      = "Against Delivery"
+TERMS      = ""                  # set e.g. "Against Delivery" to show a Terms line under the date
 
 SELLER_NAME  = "T.SAIFUDDIN & CO"
-SELLER_LINES = ["No.72", "N.R.Road", "Bangalore", "560002 Karnataka", "India",
-                "GSTIN 29AADFT8885H1ZF"]
+SELLER_LINES = ["No.72 N.R.Road", "Bangalore", "Karnataka 560002", "+917019740620",
+                "+919739394657", "GSTIN 29AADFT8885H1ZF"]
 
-BUYER_LABEL = "Buyer"
+BUYER_LABEL = "Buyer/Consignee"
 BUYER_NAME  = "BuyersHub"
 BUYER_LINES = ["Plot 27 , PRT Colony , Karmanghat", "Hyderabad Telangana 500079", "India",
                "GSTIN 36AAZFB2304B1ZQ", "+919182706754", "sales@buyershub.org.in"]
@@ -50,6 +50,13 @@ TAXES = [("IGST18 (18%)", 18)]
 TERMS_AND_CONDITIONS = [
     "1. Payment: 100% Against Proforma",
     "2. Packing and forwarding charges extra",
+]
+
+# Sign-off printed under the terms & conditions (set to [] to hide)
+SIGN_OFF = [
+    "Regards,",
+    "Name,",
+    "Tsaifuddin and Company",
 ]
 
 # =====================================================================
@@ -155,8 +162,9 @@ def build_html() -> str:
     # Date / terms
     text(460.3, 280.2, "Date :", 10, align="right")
     text(559.9, 281.0, DATE, 8, align="right")
-    text(460.3, 299.2, "Terms :", 10, align="right")
-    text(559.8, 300.1, TERMS, 8, align="right")
+    if TERMS:
+        text(460.3, 299.2, "Terms :", 10, align="right")
+        text(559.8, 300.1, TERMS, 8, align="right")
 
     # Item table header
     head_top = 328.8
@@ -202,9 +210,16 @@ def build_html() -> str:
     text(451.8, y, "Total", 9, True, BLACK, "right")
     text(553.1, y, "₹" + money(total), 9, True, BLACK, "right")
 
-    # Terms & conditions (bottom)
+    # Terms & conditions + sign-off, stacked upward from the footer rule
+    bottom = 772.5                       # top of the last line of this block
+    if SIGN_OFF:
+        so_top = bottom - 10.5 * (len(SIGN_OFF) - 1)
+        lines(46.4, so_top, SIGN_OFF, step=10.5)
+        bottom = so_top - 18.0           # gap between T&C and sign-off
+    else:
+        bottom -= 10.5 * 2               # original position when there is no sign-off
     if TERMS_AND_CONDITIONS:
-        tc_top = 752.0 - 10.5 * (len(TERMS_AND_CONDITIONS) - 2)
+        tc_top = bottom - 10.5 * (len(TERMS_AND_CONDITIONS) - 1)
         text(46.4, tc_top - 14.0, "Terms & Conditions", 10)
         lines(46.4, tc_top, TERMS_AND_CONDITIONS, step=10.5)
 

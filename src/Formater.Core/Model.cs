@@ -34,4 +34,7 @@ public sealed class Quotation
     public List<LineItem> Items { get; set; } = [];
     public List<Tax> Taxes { get; set; } = [];
     public List<string> TermsAndConditions { get; set; } = [];
+
+    /// <summary>Lines under the terms and conditions, e.g. "Regards," / "Name," / "Tsaifuddin and Company".</summary>
+    public List<string> SignOff { get; set; } = [];
 }

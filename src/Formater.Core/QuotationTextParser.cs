@@ -29,7 +29,7 @@ public static partial class QuotationTextParser
 {
     private enum Field
     {
-        BuyerName, Address, Gstin, Phone, Email, Ref, OtherRef, Date, Terms, Gst, Tc, Title, Items,
+        BuyerName, Address, Gstin, Phone, Email, Ref, OtherRef, Date, Terms, Gst, Tc, SignOff, Title, Items,
     }
 
     private static readonly Dictionary<string, Field> Labels = new(StringComparer.Ordinal)
@@ -70,6 +70,8 @@ public static partial class QuotationTextParser
         ["termsandconditions"] = Field.Tc, ["termsconditions"] = Field.Tc, ["conditions"] = Field.Tc,
         ["condition"] = Field.Tc, ["note"] = Field.Tc, ["notes"] = Field.Tc, ["remark"] = Field.Tc,
         ["remarks"] = Field.Tc,
+
+        ["signoff"] = Field.SignOff, ["signature"] = Field.SignOff, ["closing"] = Field.SignOff,
 
         ["title"] = Field.Title, ["document"] = Field.Title,
         ["items"] = Field.Items, ["item"] = Field.Items, ["products"] = Field.Items, ["particulars"] = Field.Items,
@@ -141,6 +143,7 @@ public static partial class QuotationTextParser
         var address = new List<string>();
         string? gstin = null, phone = null, email = null;
         List<string>? tc = null;
+        List<string>? signOff = null;
         var gstMode = GstMode.Auto;
         var gstPercent = settings.GstPercent;
         LineItem? lastItem = null;
@@ -154,7 +157,7 @@ public static partial class QuotationTextParser
             var line = raw.Trim();
             if (line.Length == 0)
             {
-                if (section is Field.Tc or Field.Address) section = null;
+                if (section is Field.Tc or Field.SignOff or Field.Address) section = null;
                 continue;
             }
             if (line.StartsWith('#') || line.StartsWith("//", StringComparison.Ordinal)) continue;
@@ -169,6 +172,7 @@ public static partial class QuotationTextParser
                 {
                     section = field;
                     if (field == Field.Tc) tc ??= [];
+                    if (field == Field.SignOff) signOff ??= [];
                     if (field == Field.Items) lastItem = null;
                     continue;
                 }
@@ -194,6 +198,7 @@ public static partial class QuotationTextParser
                     case Field.Terms: q.Terms = value; break;
                     case Field.Gst: ParseGst(value, lineNo, result, ref gstMode, ref gstPercent); break;
                     case Field.Tc: (tc ??= []).Add(value); break;
+                    case Field.SignOff: (signOff ??= []).Add(value); break;
                     case Field.Title: q.Title = value; break;
                 }
                 continue;
@@ -223,6 +228,11 @@ public static partial class QuotationTextParser
             if (section == Field.Tc)
             {
                 tc!.Add(line);
+                continue;
+            }
+            if (section == Field.SignOff)
+            {
+                signOff!.Add(line);
                 continue;
             }
             if (section == Field.Address)
@@ -256,6 +266,7 @@ public static partial class QuotationTextParser
         if (!string.IsNullOrWhiteSpace(email)) q.Buyer.Lines.Add(email);
 
         q.TermsAndConditions = tc ?? [.. settings.TermsAndConditions];
+        q.SignOff = signOff ?? [.. settings.SignOff];
 
         // GST
         var sellerGstin = Gst.FindGstin(settings.SellerLines);

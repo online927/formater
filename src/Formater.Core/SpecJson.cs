@@ -21,6 +21,7 @@ public static class SpecJson
             Seller = ReadParty(root, "seller", ""),
             Buyer = ReadParty(root, "buyer", "Buyer"),
             TermsAndConditions = Strings(root, "terms_and_conditions"),
+            SignOff = Strings(root, "sign_off"),
         };
 
         if (root.TryGetProperty("items", out var items))

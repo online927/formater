@@ -35,6 +35,8 @@ compare_to_reference() { # <pdf> <label>
   fi
 }
 
-compare_to_reference "$OUT/sample_data.pdf" sample_data
-if [ -n "${WINDOWS_PDF:-}" ]; then compare_to_reference "$WINDOWS_PDF" windows_sample_data; fi
-echo "OK: PDFs in $OUT"
+status=0
+compare_to_reference "$OUT/sample_data.pdf" sample_data || status=1
+if [ -n "${WINDOWS_PDF:-}" ]; then compare_to_reference "$WINDOWS_PDF" windows_sample_data || status=1; fi
+if [ "$status" -eq 0 ]; then echo "OK: PDFs in $OUT"; fi
+exit "$status"

@@ -10,10 +10,10 @@ const { chromium } = require("playwright");
     console.error("usage: node tools/print-pdf.cjs <in.html> <out.pdf> [...]");
     process.exit(2);
   }
-  const browser = await chromium.launch();
-  // Device scale 2 turns on fractional glyph positioning in Linux Chromium (at scale 1 every glyph
-  // is rounded to a whole pixel and long lines drift by points). The PDF itself is the same size.
-  const page = await browser.newPage({ deviceScaleFactor: 2 });
+  // No font hinting: with hinting (the headless shell's default on some machines) Linux Chromium
+  // rounds every glyph advance to a whole pixel and long lines drift by several points.
+  const browser = await chromium.launch({ args: ["--font-render-hinting=none"] });
+  const page = await browser.newPage();
   for (let i = 0; i < args.length; i += 2) {
     await page.goto("file://" + path.resolve(args[i]));
     await page.waitForFunction(() => ["rendered", "font-error"].includes(document.body.dataset.state));

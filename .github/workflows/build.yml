@@ -1,0 +1,117 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests and visual check (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests
+        run: dotnet test tests/Formater.Core.Tests -c Release
+      - name: Install Chromium, poppler and ImageMagick
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils imagemagick
+          npm install --prefix tools
+          npx --prefix tools playwright install --with-deps chromium
+      - name: Render PDFs and compare with the reference
+        run: tools/visual-check.sh out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-pdfs
+          path: |
+            out/*.pdf
+            out/*-vs-reference.png
+
+  windows:
+    name: Formater.exe (Windows)
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish single-file exe
+        run: dotnet publish src/Formater.App -c Release -r win-x64 -p:DebugType=none -o publish
+      - name: Smoke test - export PDFs with the real exe and WebView2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force smoke | Out-Null
+          $runs = @(
+            @('docs\handoff\sample_data.json', 'smoke\sample_data.pdf'),
+            @('examples\quotation.txt', 'smoke\Quotation-100186.pdf'),
+            @('tests\visual\many-items.txt', 'smoke\many-items.pdf')
+          )
+          foreach ($r in $runs) {
+            $p = Start-Process -FilePath publish\Formater.exe -Wait -PassThru -NoNewWindow `
+                   -ArgumentList '--export', $r[0], $r[1], '--date', '2026-11-03'
+            if ($p.ExitCode -ne 0) { throw "Export of $($r[0]) failed with exit code $($p.ExitCode)" }
+            if (-not (Test-Path $r[1]) -or (Get-Item $r[1]).Length -lt 10000) { throw "$($r[1]) was not written" }
+            Write-Host "$($r[1]): $((Get-Item $r[1]).Length) bytes"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Formater-win-x64
+          path: publish/Formater.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-pdfs
+          path: smoke/*.pdf
+
+  windows-check:
+    name: Compare the Windows PDF with the reference
+    runs-on: ubuntu-latest
+    needs: windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-pdfs
+          path: smoke
+      - name: Install Chromium, poppler and ImageMagick
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils imagemagick
+          npm install --prefix tools
+          npx --prefix tools playwright install --with-deps chromium
+      - name: Compare
+        run: WINDOWS_PDF=smoke/sample_data.pdf tools/visual-check.sh out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-vs-reference
+          path: out/windows_sample_data*.png
+
+  release:
+    name: Attach Formater.exe to the release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [windows, windows-check]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Formater-win-x64
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Formater.exe

@@ -1,0 +1,13 @@
+Company: Very Long Buyer Company Name Engineering Works Private Limited
+Address: Unit No. 501, Fifth Floor, Tower B, Some Very Long Business Park Name, Outer Ring Road, Marathahalli
+Address: Bangalore 560037 Karnataka
+Phone: 080 4123 4567
+Email: purchase@example.com
+Ref: 100192
+Other Ref: Enquiry 45/2026
+Terms: 30 days from invoice
+
+Digital Vernier Caliper 0-300 mm with Data Output Port, Carbide Tipped Jaws and Fitted Wooden Case, 12.5%, 4, 18,750
+  Make - Mitutoyo, Japan. Model : 500-182-30. Supplied with traceable calibration certificate from NABL lab.
+Surface Plate Granite 600 x 450 mm Grade 0, 5%, 1, 32,000
+Dial Indicator, 0%, 6, 2,150, Nos, Make - Baker

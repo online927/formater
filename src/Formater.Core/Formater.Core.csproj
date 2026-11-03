@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Formater.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Ubuntu-Regular.ttf" LogicalName="Ubuntu-Regular.ttf" />
+    <EmbeddedResource Include="Resources\Ubuntu-Bold.ttf" LogicalName="Ubuntu-Bold.ttf" />
+    <EmbeddedResource Include="Resources\logo-banner.svg" LogicalName="logo-banner.svg" />
+    <EmbeddedResource Include="Resources\logo-square.svg" LogicalName="logo-square.svg" />
+    <EmbeddedResource Include="Resources\page.html" LogicalName="page.html" />
+    <EmbeddedResource Include="Resources\layout.js" LogicalName="layout.js" />
+  </ItemGroup>
+</Project>

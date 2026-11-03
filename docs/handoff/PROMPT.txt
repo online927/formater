@@ -1,0 +1,11 @@
+I'm attaching a handoff package for a quotation PDF generator (T.SAIFUDDIN & CO).
+
+Please build an app where I can enter quotation details (buyer, items, quantities, rates, taxes, terms) and export a PDF that looks exactly like reference/Quotation-100186.pdf.
+
+- SPEC.md is the source of truth: page geometry, every text position, colours, fonts, dynamic row/totals rules, GST maths and Indian number formatting.
+- sample_data.json is the test fixture; rendering it must reproduce the reference PDF (see SPEC.md §10).
+- reference/make_quotation.py is a working Python implementation you can port or wrap.
+- Use the fonts in fonts/ and the vector logos in assets/ — do not substitute.
+- Recommended: HTML + headless Chromium (Puppeteer/Playwright) for the PDF export.
+
+Before writing code, read SPEC.md fully and confirm the stack you plan to use. After building, show me the exported PDF for sample_data.json next to the reference.

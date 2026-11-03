@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Formater.App/Formater.App.csproj" />
+    <Project Path="src/Formater.Cli/Formater.Cli.csproj" />
+    <Project Path="src/Formater.Core/Formater.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Formater.Core.Tests/Formater.Core.Tests.csproj" />
+  </Folder>
+</Solution>

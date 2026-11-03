@@ -1,0 +1,51 @@
+Company: Multi Page Buyer
+Ref: 100193
+GST: CGST+SGST
+Item number 1 description, 5%, 1, 187
+  Make - Brand 1
+Item number 2 description, 5%, 2, 324
+  Make - Brand 2
+Item number 3 description, 5%, 3, 461
+  Make - Brand 3
+Item number 4 description, 5%, 4, 598
+  Make - Brand 4
+Item number 5 description, 5%, 5, 735
+  Make - Brand 5
+Item number 6 description, 5%, 6, 872
+  Make - Brand 6
+Item number 7 description, 5%, 7, 1009
+  Make - Brand 7
+Item number 8 description, 5%, 8, 1146
+  Make - Brand 8
+Item number 9 description, 5%, 9, 1283
+  Make - Brand 9
+Item number 10 description, 5%, 10, 1420
+  Make - Brand 10
+Item number 11 description, 5%, 11, 1557
+  Make - Brand 11
+Item number 12 description, 5%, 12, 1694
+  Make - Brand 12
+Item number 13 description, 5%, 13, 1831
+  Make - Brand 13
+Item number 14 description, 5%, 14, 1968
+  Make - Brand 14
+Item number 15 description, 5%, 15, 2105
+  Make - Brand 15
+Item number 16 description, 5%, 16, 2242
+  Make - Brand 16
+Item number 17 description, 5%, 17, 2379
+  Make - Brand 17
+Item number 18 description, 5%, 18, 2516
+  Make - Brand 18
+Item number 19 description, 5%, 19, 2653
+  Make - Brand 19
+Item number 20 description, 5%, 20, 2790
+  Make - Brand 20
+Item number 21 description, 5%, 21, 2927
+  Make - Brand 21
+Item number 22 description, 5%, 22, 3064
+  Make - Brand 22
+Item number 23 description, 5%, 23, 3201
+  Make - Brand 23
+Item number 24 description, 5%, 24, 3338
+  Make - Brand 24

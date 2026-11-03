@@ -1,0 +1,15 @@
+Company: Bangalore Tools Pvt Ltd
+Address: 14, 2nd Main, Peenya Industrial Area
+Address: Bangalore 560058 Karnataka
+GSTIN: 29AABCB1234C1Z9
+Ref: 100190
+Date: 2026-11-02
+
+Vernier Hook Depth Gauge, 0, 5, 12011
+  Make - Insize
+  Model : 1234-2001
+Digital Micrometer 0-25mm, 0, 2, 8450, Pcs, Make - Mitutoyo
+Thread Plug Gauge M10, 0, 10, 950
+  Make - Ultra
+  GO / NO-GO
+  With calibration certificate

@@ -1,0 +1,8 @@
+{
+  "name": "formater-tools",
+  "private": true,
+  "description": "Prints formater-html pages to PDF with headless Chromium for the visual checks.",
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

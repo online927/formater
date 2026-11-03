@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Make a GitHub release with this version tag, e.g. v1.0.0 (leave empty to only build)"
+        required: false
+        default: ""
 
 jobs:
   test:
@@ -107,7 +112,8 @@ jobs:
 
   release:
     name: Attach Formater.exe to the release
-    if: startsWith(github.ref, 'refs/tags/v')
+    # On a pushed v* tag, or when run by hand with a release version (the release action then creates the tag).
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release != '')
     runs-on: ubuntu-24.04
     needs: [windows, windows-check]
     permissions:
@@ -119,6 +125,9 @@ jobs:
           name: Formater-win-x64
       - uses: softprops/action-gh-release@v2
         with:
-          name: Formater ${{ github.ref_name }}
-          body_path: docs/release-notes/${{ github.ref_name }}.md
+          tag_name: ${{ inputs.release || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: Formater ${{ inputs.release || github.ref_name }}
+          body_path: docs/release-notes/${{ inputs.release || github.ref_name }}.md
           files: Formater.exe
+          fail_on_unmatched_files: true

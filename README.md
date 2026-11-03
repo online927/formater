@@ -10,8 +10,17 @@ A Windows app that turns pasted text into a one-page A4 quotation PDF. The PDF u
 
 ## Download
 
-Every push builds the exe on GitHub Actions. Open **Actions → Build → latest run → Artifacts → Formater-win-x64**.
-A version tag such as `v1.0.0` also attaches `Formater.exe` to a GitHub release.
+Download `Formater.exe` from the latest release:
+[**Releases → v1.0.0**](https://github.com/online927/formater/releases/tag/v1.0.0).
+
+Every push also builds the exe on GitHub Actions: **Actions → Build → latest run → Artifacts → Formater-win-x64**.
+
+To make a new release:
+1. Add `docs/release-notes/vX.Y.Z.md`.
+2. Either push a `vX.Y.Z` tag, or run **Actions → Build → Run workflow** with *release* set to `vX.Y.Z`.
+
+The workflow builds and tests the exe on Windows, checks the PDF against the reference, then creates the tag and the
+release with `Formater.exe` attached.
 
 The first time you run it, Windows SmartScreen may warn about an unknown publisher. Click
 **More info → Run anyway**.

@@ -27,7 +27,12 @@ compare_to_reference() { # <pdf> <label>
   pdftoppm -r 150 -png -singlefile "$1" "$OUT/$2"
   pdftoppm -r 150 -png -singlefile "$ROOT/docs/handoff/reference/Quotation-100186.pdf" "$OUT/reference" 2>/dev/null
   echo "$2 compared with the reference (limit $LIMIT):"
-  "${PYTHON:-python3}" "$ROOT/tools/compare.py" "$OUT/$2.png" "$OUT/reference.png" --limit "$LIMIT" --side "$OUT/$2-vs-reference.png"
+  if ! "${PYTHON:-python3}" "$ROOT/tools/compare.py" "$OUT/$2.png" "$OUT/reference.png" --limit "$LIMIT" --side "$OUT/$2-vs-reference.png"; then
+    echo "Fonts in $1:"; pdffonts "$1" || true
+    echo "Word positions in $1 (x, y in pt):"
+    pdftotext -bbox "$1" - | sed -n 's/.*xMin="\([0-9.]*\)" yMin="\([0-9.]*\)".*>\(.*\)<\/word>/\1 \2 \3/p' | head -80 || true
+    return 1
+  fi
 }
 
 compare_to_reference "$OUT/sample_data.pdf" sample_data

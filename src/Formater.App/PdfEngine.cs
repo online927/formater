@@ -86,22 +86,29 @@ internal sealed class PdfEngine
         return doc.RootElement.GetProperty("pages").GetInt32();
     }
 
-    /// <summary>Prints the current page to a PDF file. False when the file could not be written.</summary>
+    /// <summary>
+    /// Prints the current page to a PDF file with Chromium's own Page.printToPDF, the call that made the
+    /// reference PDF (A4 = 8.27 × 11.7 in, no margins, backgrounds, scale 1). WebView2's PrintToPdfAsync
+    /// sizes the paper differently and scales the page slightly. False when the file could not be written.
+    /// </summary>
     public async Task<bool> PrintAsync(string path)
     {
-        var core = _web.CoreWebView2;
-        var ps = core.Environment.CreatePrintSettings();
-        ps.Orientation = CoreWebView2PrintOrientation.Portrait;
-        ps.PageWidth = 8.27;    // A4, as Chromium's own "A4" (595.4 × 842.4 pt)
-        ps.PageHeight = 11.7;
-        ps.MarginTop = 0;
-        ps.MarginBottom = 0;
-        ps.MarginLeft = 0;
-        ps.MarginRight = 0;
-        ps.ScaleFactor = 1.0;
-        ps.ShouldPrintBackgrounds = true;
-        ps.ShouldPrintHeaderAndFooter = false;
-        ps.ShouldPrintSelectionOnly = false;
-        return await core.PrintToPdfAsync(path, ps);
+        const string args = """
+            {"paperWidth":8.27,"paperHeight":11.7,"marginTop":0,"marginBottom":0,"marginLeft":0,"marginRight":0,
+             "printBackground":true,"preferCSSPageSize":false,"scale":1,"displayHeaderFooter":false,
+             "landscape":false,"transferMode":"ReturnAsBase64"}
+            """;
+        var result = await _web.CoreWebView2.CallDevToolsProtocolMethodAsync("Page.printToPDF", args);
+        using var doc = JsonDocument.Parse(result);
+        var pdf = Convert.FromBase64String(doc.RootElement.GetProperty("data").GetString() ?? "");
+        try
+        {
+            await File.WriteAllBytesAsync(path, pdf);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 }

@@ -24,8 +24,15 @@ def main() -> int:
     cand = Image.open(a.candidate).convert("RGB")
     ref = Image.open(a.reference).convert("RGB")
     if cand.size != ref.size:
-        print(f"size differs: {cand.size} vs {ref.size}")
-        return 1
+        # Chromium builds round A4 slightly differently (a pixel or two at 150 dpi). Compare on a common
+        # canvas with both pages anchored at the top-left corner, where the layout coordinates start.
+        print(f"page size differs slightly: {cand.size} vs {ref.size}")
+        size = (max(cand.width, ref.width), max(cand.height, ref.height))
+        def pad(img):
+            canvas = Image.new("RGB", size, "white")
+            canvas.paste(img, (0, 0))
+            return canvas
+        cand, ref = pad(cand), pad(ref)
 
     diff = np.abs(np.asarray(cand, dtype=np.int16) - np.asarray(ref, dtype=np.int16)).max(axis=2) > 26
     count = int(diff.sum())

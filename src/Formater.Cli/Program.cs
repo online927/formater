@@ -22,7 +22,10 @@ foreach (var w in result.Warnings) Console.Error.WriteLine("warning: " + w);
 foreach (var e in result.Errors) Console.Error.WriteLine("error: " + e);
 if (!result.IsValid) return 1;
 
-var model = Calculator.ToRenderModel(result.Quotation);
+// No Ref in the text: show the first number of the format (this tool has no register).
+if (result.Quotation.RefNo.Length == 0)
+    result.Quotation.RefNo = Numbering.Format(settings.RefPattern, Numbering.FyStart(today), 1);
+var model = Calculator.ToRenderModel(result.Quotation, settings.DiscountColumn);
 File.WriteAllText(args[1], PageBuilder.Page(model));
 Console.WriteLine($"{args[1]}: {model.Items.Count} item(s), {result.GstNote}, total {model.Totals[^1].Value}");
 return 0;

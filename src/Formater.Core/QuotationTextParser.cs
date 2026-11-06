@@ -77,16 +77,6 @@ public static partial class QuotationTextParser
         ["items"] = Field.Items, ["item"] = Field.Items, ["products"] = Field.Items, ["particulars"] = Field.Items,
     };
 
-    private static readonly HashSet<string> Units = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "nos", "no", "no.", "nos.", "pcs", "pc", "pcs.", "piece", "pieces", "set", "sets", "pair", "pairs",
-        "kg", "kgs", "g", "gm", "gms", "mtr", "mtrs", "m", "meter", "meters", "metre", "metres", "ltr", "ltrs",
-        "l", "box", "boxes", "pkt", "pkts", "pack", "packs", "roll", "rolls", "each", "ea", "unit", "units",
-        "dozen", "dz", "lot", "lots", "job", "jobs", "hr", "hrs", "sqft", "ft", "feet", "mm", "cm", "bag",
-        "bags", "bottle", "bottles", "can", "cans", "tube", "tubes", "reel", "reels", "coil", "coils", "sheet",
-        "sheets", "length", "lengths", "kit", "kits", "bundle", "bundles", "carton", "cartons", "drum", "drums",
-    };
-
     [GeneratedRegex(@"^(?<k>[A-Za-z][A-Za-z0-9 .&/_'-]{0,30}?)\s*[:=]\s*(?<v>.*)$")]
     private static partial Regex LabelRegex();
 
@@ -126,14 +116,32 @@ public static partial class QuotationTextParser
         "d-M-yyyy", "dd.MM.yyyy", "d.M.yyyy", "yyyy-MM-dd", "dd-MMM-yyyy", "d-MMM-yyyy", "dd/MM/yy", "d/M/yy",
     ];
 
-    public static string FormatDate(DateOnly date) => date.ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
+    public static string FormatDate(DateOnly date, string format = "dd MMM yyyy")
+    {
+        try
+        {
+            return date.ToString(string.IsNullOrWhiteSpace(format) ? "dd MMM yyyy" : format, CultureInfo.InvariantCulture);
+        }
+        catch (FormatException)
+        {
+            return date.ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
+        }
+    }
+
+    /// <summary>The text without its Ref lines, so a copied quotation gets a new number.</summary>
+    public static string RemoveRefLines(string text)
+    {
+        var lines = (text ?? "").Replace("\r\n", "\n").Split('\n')
+            .Where(l => !(TryLabel(l.Trim(), out var f, out _) && f is Field.Ref));
+        return string.Join("\r\n", lines);
+    }
 
     public static ParseResult Parse(string text, AppSettings settings, DateOnly today)
     {
         var q = new Quotation
         {
             Title = settings.Title,
-            Date = FormatDate(today),
+            Date = FormatDate(today, settings.DateFormat),
             Terms = settings.DefaultTerms,
             Seller = new Party { Name = settings.SellerName, Lines = [.. settings.SellerLines] },
             Buyer = new Party { Label = settings.BuyerLabel },
@@ -144,7 +152,10 @@ public static partial class QuotationTextParser
         string? gstin = null, phone = null, email = null;
         List<string>? tc = null;
         List<string>? signOff = null;
-        var gstMode = GstMode.Auto;
+        var gstMode = settings.DefaultGstMode;
+        var gstFromText = false;
+        var units = new HashSet<string>(settings.Units.Select(u => u.Trim()).Where(u => u.Length > 0),
+            StringComparer.OrdinalIgnoreCase);
         var gstPercent = settings.GstPercent;
         LineItem? lastItem = null;
         Field? section = null; // set by a label with no value, e.g. "Address:" or "Terms & Conditions:"
@@ -194,9 +205,9 @@ public static partial class QuotationTextParser
                     case Field.Email: email = value; break;
                     case Field.Ref: q.RefNo = value; break;
                     case Field.OtherRef: q.OtherRef = value; break;
-                    case Field.Date: q.Date = ParseDate(value); break;
+                    case Field.Date: q.Date = ParseDate(value, settings.DateFormat); break;
                     case Field.Terms: q.Terms = value; break;
-                    case Field.Gst: ParseGst(value, lineNo, result, ref gstMode, ref gstPercent); break;
+                    case Field.Gst: ParseGst(value, lineNo, result, ref gstMode, ref gstPercent); gstFromText = true; break;
                     case Field.Tc: (tc ??= []).Add(value); break;
                     case Field.SignOff: (signOff ??= []).Add(value); break;
                     case Field.Title: q.Title = value; break;
@@ -205,7 +216,7 @@ public static partial class QuotationTextParser
             }
 
             // Item line, e.g. "Vernier Hook Depth Gauge, 10%, 5, 12011".
-            var item = TryItem(line, settings, out var itemError);
+            var item = TryItem(line, settings, units, out var itemError);
             if (item is not null)
             {
                 if (item.DiscountPercent > 100)
@@ -273,18 +284,19 @@ public static partial class QuotationTextParser
         var buyerGstin = gstin is not null && Gst.IsGstin(gstin) ? gstin : null;
         var (intra, reason) = Gst.Decide(sellerGstin, settings.HomeState, buyerGstin, address);
         var p = Money.Percent(gstPercent);
+        var source = gstFromText ? "set in text" : "default in Settings";
         switch (gstMode)
         {
             case GstMode.None:
-                result.GstNote = "No GST";
+                result.GstNote = $"No GST ({source})";
                 break;
             case GstMode.Igst:
                 q.Taxes = Gst.Taxes(false, gstPercent);
-                result.GstNote = $"IGST {p}% (set in text)";
+                result.GstNote = $"IGST {p}% ({source})";
                 break;
             case GstMode.CgstSgst:
                 q.Taxes = Gst.Taxes(true, gstPercent);
-                result.GstNote = $"CGST + SGST {p}% (set in text)";
+                result.GstNote = $"CGST + SGST {p}% ({source})";
                 break;
             default:
                 q.Taxes = Gst.Taxes(intra, gstPercent);
@@ -295,8 +307,6 @@ public static partial class QuotationTextParser
 
         if (q.Buyer.Name.Length == 0)
             result.Errors.Add(new(0, "Company name is missing. Add a line like:  Company: BuyersHub"));
-        if (q.RefNo.Length == 0)
-            result.Errors.Add(new(0, "Ref No. is missing. Add a line like:  Ref: 100186"));
         if (q.Items.Count == 0)
             result.Errors.Add(new(0, "No items found. Item lines look like:  Item name, discount, qty, rate"));
 
@@ -351,11 +361,11 @@ public static partial class QuotationTextParser
         else address.Add(line);
     }
 
-    private static string ParseDate(string value)
+    private static string ParseDate(string value, string format)
     {
         return DateTime.TryParseExact(value, DateFormats, CultureInfo.InvariantCulture,
                 DateTimeStyles.AllowWhiteSpaces, out var d)
-            ? d.ToString("dd MMM yyyy", CultureInfo.InvariantCulture)
+            ? FormatDate(DateOnly.FromDateTime(d), format)
             : value;
     }
 
@@ -382,7 +392,7 @@ public static partial class QuotationTextParser
     /// "name, discount, qty, rate[, unit][, description | description]". Returns null when the line is not
     /// an item; <paramref name="error"/> is set when it looks like a broken item line.
     /// </summary>
-    private static LineItem? TryItem(string line, AppSettings settings, out string? error)
+    private static LineItem? TryItem(string line, AppSettings settings, HashSet<string> units, out string? error)
     {
         error = null;
         var tabs = line.Contains('\t');
@@ -440,7 +450,7 @@ public static partial class QuotationTextParser
             };
 
             var extras = fields.Skip(next).Where(f => f.Length > 0).ToList();
-            if (extras.Count > 0 && Units.Contains(extras[0]))
+            if (extras.Count > 0 && units.Contains(extras[0]))
             {
                 if (item.Unit.Length == 0) item.Unit = extras[0];
                 extras.RemoveAt(0);

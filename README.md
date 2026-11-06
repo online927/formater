@@ -27,8 +27,8 @@ The first time you run it, Windows SmartScreen may warn about an unknown publish
 
 ## How to use
 
-Paste the quotation text on the left. Only **Company**, **Ref** and **at least one item** are required. Everything
-else is optional.
+Paste the quotation text on the left. Only **Company** and **at least one item** are required. Everything else is
+optional; the **Ref No.** is given automatically.
 
 ```
 Company: BuyersHub
@@ -38,7 +38,6 @@ Address: India
 GSTIN: 36AAZFB2304B1ZQ
 Phone: +919182706754
 Email: sales@buyershub.org.in
-Ref: 100186
 Other Ref: R
 
 Vernier Hook Depth Gauge, 10%, 5, 12011
@@ -54,6 +53,11 @@ Digital Caliper 150mm, 0%, 2, 3450
     `Gauge, 10%, 5, 12011, Pcs, Make - Insize | Model : 1234-2001`. Without a unit, the item gets **Nos**.
   - Lines indented (or starting with `-`) under an item are its small description lines.
   - Rows copied from Excel (tab separated) also work.
+- **Ref No.** is given automatically when you export: `T/2627/00001`, `T/2627/00002`, …
+  - `2627` is the financial year (April to March). The number restarts at `00001` every 1 April.
+  - The preview shows the number the quotation will get. A number is only used once its PDF is saved.
+  - A line like `Ref: 100186` uses that number instead, but only if it has never been used.
+  - **No number is ever used twice.** Re-exporting the same text gives the next number.
 - **Address, GSTIN, phone, e-mail:** each is optional. Lines without a label under the company name are also read as
   its address. A GSTIN, phone number or e-mail on such a line is recognised.
 - **Date** is today's date (`03 Nov 2026`). Override it with `Date: 02/11/2026`.
@@ -74,24 +78,50 @@ Digital Caliper 150mm, 0%, 2, 3450
 - **What the app understood:** the box under the text shows each item's maths, the GST choice and the totals, plus
   any line it could not read. Export is blocked until the errors are fixed.
 
-**Settings** holds the details that are the same on every quotation:
-- your company name and address
-- the document title
-- your state and GST rate
-- the default unit
-- the default Terms, Terms & Conditions and sign-off
-- whether the PDF opens after saving
+### Every quotation is kept
 
-They are stored in `%APPDATA%\Formater\settings.json`. Settings saved by the first version are moved to the
-new format's title, address, buyer heading and Terms, unless you had changed them. The text you were working on is kept in `draft.txt` there.
+- **Saved copies:** every exported PDF is saved in the PDF folder, `Documents\Formater\PDFs\2026-27\` by default,
+  named like `Quotation-T-2627-00001.pdf`.
+  - If Settings → Saving says so, the app then asks where to save a copy as well.
+- **The register:** every Ref No. is recorded with the date, company, total and the text it was made from.
+  The record is in `%APPDATA%\Formater\register.json`, with a `.bak` copy.
+- **History** lists them all, newest first, with search, and these buttons:
+  - **Open PDF** and **Show in folder**
+  - **Copy text to editor**: makes a similar quotation, which gets a new number
+  - **Mark cancelled**: keeps the number and PDF, but shows the quotation as cancelled
+  - **Export list (CSV)**: for Excel
+- **Nothing can be deleted** from the History.
+
+### Settings
+
+| Tab | Settings |
+|---|---|
+| Company | Company name, address lines (GSTIN last), your state |
+| Document | Title, buyer heading, date format, Disc % column (when needed / always / never), default unit, units the app recognises |
+| Numbering | Ref No. format (`T/{FY}/{N:5}`; also `{FY-}` = 2026-27, `{YYYY}`, `{N}`), next number (forward only) |
+| GST | Automatic / always IGST / always CGST + SGST / no GST; GST rate |
+| Bottom of page | Terms, Terms & Conditions, sign-off |
+| Saving | PDF folder, file name (`{Ref}`, `{Company}`, `{Title}`, `{Date}`), ask where to save a copy, open the PDF |
+
+- **Backup:** **Export settings / Import settings** copies the settings to another PC.
+- **Reset to defaults:** puts every setting back. It never changes the number register.
+- **Storage:** settings are in `%APPDATA%\Formater\settings.json`.
+  - Settings saved by the first version are moved to the new format's title, address, buyer heading and Terms,
+    unless you had changed them.
+  - The text you were working on is kept in `draft.txt` in the same folder.
 
 ### Command line
 
 ```
-Formater.exe --export quotation.txt Quotation-100186.pdf [--date 2026-11-02]
+Formater.exe --export quotation.txt out.pdf [--date 2026-11-02] [--data-dir folder] [--no-register]
 ```
 
-This makes the PDF without opening a window. Exit code 0 means saved and 1 means the text has errors.
+This makes the PDF without opening a window.
+- **Numbering:** it issues and records the number like the app, keeps the PDF in the PDF folder and copies it to
+  `out.pdf`.
+- **Exit codes:** 0 means saved. 1 means the text has errors or its Ref No. was already used.
+- **`--no-register`:** only draws the PDF; no number is used.
+- **`--data-dir`:** keeps the settings, register and PDFs in another folder.
 JSON in the SPEC §8 format (`docs/handoff/sample_data.json`) is accepted as input as well as text.
 
 ## Layout

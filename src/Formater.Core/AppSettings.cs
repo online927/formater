@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Formater.Core;
 
@@ -26,10 +27,50 @@ public sealed class AppSettings
         ["1. Payment: 100% Against Proforma", "2. Packing and forwarding charges extra"];
     public List<string> SignOff { get; set; } = ["Regards,", "Name,", "Tsaifuddin and Company"];
 
+    // Document
+    /// <summary>.NET date format for the Date on the page, e.g. "dd MMM yyyy" → 03 Nov 2026.</summary>
+    public string DateFormat { get; set; } = "dd MMM yyyy";
+    public DiscountColumn DiscountColumn { get; set; } = DiscountColumn.Auto;
+
+    /// <summary>Words recognised as a unit after the rate in an item line (any letter case).</summary>
+    public List<string> Units { get; set; } = [.. DefaultUnits];
+
+    // GST
+    public GstMode DefaultGstMode { get; set; } = GstMode.Auto;
+
+    // Numbering
+    /// <summary>Ref No. format; see <see cref="Numbering"/>. The running number itself lives in the register.</summary>
+    public string RefPattern { get; set; } = Numbering.DefaultPattern;
+
+    // Saving
+    /// <summary>Where every exported PDF is kept, in one folder per financial year. Null = Documents\Formater\PDFs.</summary>
+    public string? ArchiveFolder { get; set; }
+    public string FileNamePattern { get; set; } = FileNames.DefaultPattern;
+
+    /// <summary>After saving to the archive folder, also ask where to save a copy.</summary>
+    public bool AskForCopyLocation { get; set; } = true;
     public bool OpenPdfAfterExport { get; set; } = true;
+
+    /// <summary>The folder last chosen for a copy.</summary>
     public string? PdfFolder { get; set; }
 
-    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+    public static readonly string[] DefaultUnits =
+    [
+        "Nos", "No", "Pcs", "Pc", "Piece", "Pieces", "Set", "Sets", "Pair", "Pairs", "Kg", "Kgs", "G", "Gm", "Gms",
+        "Mtr", "Mtrs", "M", "Meter", "Meters", "Metre", "Metres", "Ltr", "Ltrs", "L", "Box", "Boxes", "Pkt", "Pkts",
+        "Pack", "Packs", "Roll", "Rolls", "Each", "Ea", "Unit", "Units", "Dozen", "Dz", "Lot", "Lots", "Job", "Jobs",
+        "Hr", "Hrs", "Sqft", "Ft", "Feet", "Mm", "Cm", "Bag", "Bags", "Bottle", "Bottles", "Can", "Cans", "Tube",
+        "Tubes", "Reel", "Reels", "Coil", "Coils", "Sheet", "Sheets", "Length", "Lengths", "Kit", "Kits", "Bundle",
+        "Bundles", "Carton", "Cartons", "Drum", "Drums",
+    ];
+
+    public static readonly string[] DateFormats = ["dd MMM yyyy", "dd/MM/yyyy", "dd-MM-yyyy", "dd.MM.yyyy", "d MMMM yyyy"];
+
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     public static AppSettings Load(string path)
     {
@@ -50,7 +91,7 @@ public sealed class AppSettings
     /// </summary>
     public static AppSettings FromJson(string json)
     {
-        var s = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        var s = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
         using var doc = JsonDocument.Parse(json);
         if (doc.RootElement.TryGetProperty(nameof(FormatVersion), out _)) return s;
 
@@ -69,4 +110,15 @@ public sealed class AppSettings
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(this, Options));
     }
+}
+
+/// <summary>When the table shows a Disc % column.</summary>
+public enum DiscountColumn
+{
+    /// <summary>Only when some item has a discount.</summary>
+    Auto,
+    Always,
+
+    /// <summary>Never; the Rate column then shows the rate after discount.</summary>
+    Never,
 }

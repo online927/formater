@@ -230,11 +230,12 @@ public class ParserTests
     }
 
     [Fact]
-    public void Missing_company_ref_and_items_are_errors()
+    public void Missing_company_and_items_are_errors()
     {
         var r = Parse("");
         Assert.False(r.IsValid);
-        Assert.Equal(3, r.Errors.Count);
+        Assert.Equal(2, r.Errors.Count); // company and items; the Ref No. is given by the app
+        Assert.True(Parse("Company: X\nA, 0, 1, 1").IsValid);
     }
 
     [Fact]

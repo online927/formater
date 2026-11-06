@@ -21,10 +21,15 @@ public static class Calculator
     }
 
     /// <summary>Formats everything the page layout needs. The layout itself does no maths.</summary>
-    public static RenderModel ToRenderModel(Quotation q)
+    public static RenderModel ToRenderModel(Quotation q, DiscountColumn column = DiscountColumn.Auto)
     {
         var totals = Compute(q);
-        var showDiscount = q.Items.Any(i => i.DiscountPercent != 0);
+        var showDiscount = column switch
+        {
+            DiscountColumn.Always => true,
+            DiscountColumn.Never => false,
+            _ => q.Items.Any(i => i.DiscountPercent != 0),
+        };
 
         var model = new RenderModel
         {
@@ -50,7 +55,8 @@ public static class Calculator
                 Desc = [.. item.Desc],
                 Qty = Money.Qty(item.Qty),
                 Unit = item.Unit,
-                Rate = Money.Format(item.Rate),
+                // Without a Disc % column the Rate column shows the rate after discount.
+                Rate = Money.Format(showDiscount ? item.Rate : item.Rate * (100m - item.DiscountPercent) / 100m),
                 Discount = Money.Percent(item.DiscountPercent) + "%",
                 Amount = Money.Format(totals.Amounts[i]),
             });

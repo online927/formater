@@ -56,18 +56,34 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force smoke | Out-Null
-          $runs = @(
-            @('docs\handoff\sample_data.json', 'smoke\sample_data.pdf'),
-            @('examples\quotation.txt', 'smoke\Quotation-100186.pdf'),
-            @('tests\visual\many-items.txt', 'smoke\many-items.pdf')
-          )
-          foreach ($r in $runs) {
-            $p = Start-Process -FilePath publish\Formater.exe -Wait -PassThru -NoNewWindow `
-                   -ArgumentList '--export', $r[0], $r[1], '--date', '2026-11-03'
-            if ($p.ExitCode -ne 0) { throw "Export of $($r[0]) failed with exit code $($p.ExitCode)" }
-            if (-not (Test-Path $r[1]) -or (Get-Item $r[1]).Length -lt 10000) { throw "$($r[1]) was not written" }
-            Write-Host "$($r[1]): $((Get-Item $r[1]).Length) bytes"
+          function Export([string]$in, [string]$out, [string[]]$extra = @()) {
+            $a = @('--export', $in, $out, '--date', '2026-11-03', '--data-dir', 'smoke-data') + $extra
+            $p = Start-Process -FilePath publish\Formater.exe -Wait -PassThru -NoNewWindow -ArgumentList $a
+            Write-Host "$in -> $out : exit $($p.ExitCode)"
+            return $p.ExitCode
           }
+          function Expect([int]$got, [int]$want, [string]$what) { if ($got -ne $want) { throw "${what}: exit code $got, expected $want" } }
+
+          # The reference layout, drawn without using a number
+          Expect (Export 'docs\handoff\sample_data.json' 'smoke\sample_data.pdf' @('--no-register')) 0 'sample_data'
+          # Automatic numbers
+          Expect (Export 'examples\quotation.txt' 'smoke\auto-1.pdf') 0 'first automatic number'
+          Expect (Export 'examples\minimal.txt' 'smoke\auto-2.pdf') 0 'second automatic number'
+          # A typed Ref works once and is refused the second time
+          Expect (Export 'tests\visual\three-items-cgst.txt' 'smoke\typed.pdf') 0 'typed Ref'
+          Expect (Export 'tests\visual\three-items-cgst.txt' 'smoke\typed-again.pdf') 1 'reused Ref'
+          if (Test-Path 'smoke\typed-again.pdf') { throw 'A PDF was written for a reused Ref No.' }
+          Expect (Export 'tests\visual\many-items.txt' 'smoke\many-items.pdf') 0 'many items'
+
+          $reg = Get-Content 'smoke-data\register.json' -Raw | ConvertFrom-Json
+          $refs = @($reg.Entries | ForEach-Object { $_.Ref })
+          Write-Host "Register: $($refs -join ', ')"
+          if (($refs -join ',') -ne 'T/2627/00001,T/2627/00002,100190,100193') { throw "Unexpected register: $($refs -join ', ')" }
+          $kept = @(Get-ChildItem 'smoke-data\PDFs\2026-27' -Filter *.pdf)
+          Write-Host "Kept PDFs: $($kept.Name -join ', ')"
+          if ($kept.Count -ne 4) { throw "Expected 4 kept PDFs, found $($kept.Count)" }
+          if (-not (Test-Path 'smoke-data\PDFs\2026-27\Quotation-T-2627-00001.pdf')) { throw 'Quotation-T-2627-00001.pdf missing' }
+          foreach ($f in Get-ChildItem smoke -Filter *.pdf) { if ($f.Length -lt 10000) { throw "$($f.Name) is too small" } }
       - uses: actions/upload-artifact@v4
         with:
           name: Formater-win-x64
@@ -75,7 +91,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-pdfs
-          path: smoke/*.pdf
+          path: |
+            smoke/*.pdf
+            smoke-data/register.json
 
   windows-check:
     name: Compare the Windows PDF with the reference
@@ -92,7 +110,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: windows-pdfs
-          path: smoke
+          path: .
       - name: Install Chromium, poppler, Pillow and NumPy
         run: |
           sudo apt-get update -qq

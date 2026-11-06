@@ -8,15 +8,16 @@ namespace Formater.App;
 internal sealed class MainForm : Form
 {
     internal const string FormatHelp =
-        "Paste or type the quotation as text. Only Company, Ref and at least one item are required.\n\n" +
+        "Paste or type the quotation as text. Only Company and at least one item are required.\n\n" +
         "Company: BuyersHub\n" +
         "Address: Plot 27 , PRT Colony , Karmanghat      (optional, one line each)\n" +
         "Address: Hyderabad Telangana 500079\n" +
         "GSTIN: 36AAZFB2304B1ZQ      (optional)\n" +
         "Phone: +919182706754          (optional)\n" +
         "Email: sales@buyershub.org.in  (optional)\n" +
-        "Ref: 100186\n" +
         "Other Ref: R                  (optional)\n\n" +
+        "Ref No. is given automatically (T/2627/00001, T/2627/00002 …; format in Settings → Numbering).\n" +
+        "A line like  Ref: 100186  uses that number instead, if it has never been used.\n\n" +
         "Items, one per line:   item name, discount, qty, rate\n" +
         "Vernier Hook Depth Gauge, 10%, 5, 12011\n" +
         "  Make - Insize               (indented lines = small lines under the item)\n" +
@@ -38,7 +39,6 @@ internal sealed class MainForm : Form
         "GSTIN: 36AAZFB2304B1ZQ\r\n" +
         "Phone: +919182706754\r\n" +
         "Email: sales@buyershub.org.in\r\n" +
-        "Ref: 100186\r\n" +
         "Other Ref: R\r\n" +
         "\r\n" +
         "Vernier Hook Depth Gauge, 10%, 5, 12011\r\n" +
@@ -54,6 +54,7 @@ internal sealed class MainForm : Form
     private readonly SplitContainer _split;
     private readonly System.Windows.Forms.Timer _debounce = new() { Interval = 300 };
     private AppSettings _settings;
+    private readonly QuotationRegister _register = new(AppPaths.RegisterFile);
     private PdfEngine? _engine;
     private ParseResult? _last;
 
@@ -80,11 +81,13 @@ internal sealed class MainForm : Form
         example.Click += (_, _) => _input!.Text = ExampleText;
         var clear = new ToolStripButton("Clear");
         clear.Click += (_, _) => { _input!.Clear(); _input.Focus(); };
+        var history = new ToolStripButton("History") { ToolTipText = "Every quotation exported: open, copy or cancel" };
+        history.Click += (_, _) => ShowHistory();
         var settings = new ToolStripButton("Settings");
         settings.Click += (_, _) => EditSettings();
         var help = new ToolStripButton("Text format");
         help.Click += (_, _) => MessageBox.Show(this, FormatHelp, "Text format", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        tools.Items.AddRange([_export, new ToolStripSeparator(), example, clear, new ToolStripSeparator(), settings, help]);
+        tools.Items.AddRange([_export, history, new ToolStripSeparator(), example, clear, new ToolStripSeparator(), settings, help]);
 
         // Left: text and messages
         _input = new TextBox
@@ -190,12 +193,13 @@ internal sealed class MainForm : Form
     {
         var result = QuotationInput.Read(_input.Text, _settings, DateOnly.FromDateTime(DateTime.Today));
         _last = result;
+        ApplyRefNo(result);
         int? pages = null;
         if (_engine?.Ready == true)
         {
             try
             {
-                pages = await _engine.RenderAsync(Calculator.ToRenderModel(result.Quotation));
+                pages = await _engine.RenderAsync(Calculator.ToRenderModel(result.Quotation, _settings.DiscountColumn));
             }
             catch (Exception ex)
             {
@@ -206,6 +210,38 @@ internal sealed class MainForm : Form
         ShowMessages(result, pages);
         _export.Enabled = _engine?.Ready == true && result.IsValid;
         return result;
+    }
+
+    private bool _refIsAutomatic;
+
+    /// <summary>
+    /// Shows the next number in the preview when the text has no Ref, and blocks a typed Ref that was already used.
+    /// </summary>
+    private void ApplyRefNo(ParseResult result)
+    {
+        var q = result.Quotation;
+        _refIsAutomatic = q.RefNo.Trim().Length == 0;
+        try
+        {
+            if (_refIsAutomatic)
+            {
+                var problem = Numbering.Validate(_settings.RefPattern);
+                if (problem is not null)
+                {
+                    result.Errors.Add(new ParseMessage(0, problem + " Fix it in Settings → Numbering."));
+                    return;
+                }
+                q.RefNo = _register.PeekNext(_settings.RefPattern, Numbering.FyStart(DateOnly.FromDateTime(DateTime.Today)));
+            }
+            else if (_register.Find(q.RefNo) is { } used)
+            {
+                result.Errors.Add(new ParseMessage(0, QuotationExporter.UsedMessage(used)));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            result.Errors.Add(new ParseMessage(0, "The number register cannot be read: " + ex.Message));
+        }
     }
 
     private void ShowMessages(ParseResult r, int? pages)
@@ -223,8 +259,10 @@ internal sealed class MainForm : Form
         foreach (var w in r.Warnings) Append("⚠ " + w, Color.DarkGoldenrod);
 
         var q = r.Quotation;
-        var model = Calculator.ToRenderModel(q);
-        Append($"Buyer: {(q.Buyer.Name.Length > 0 ? q.Buyer.Name : "—")}   ·   Ref No. {(q.RefNo.Length > 0 ? q.RefNo : "—")}" +
+        var model = Calculator.ToRenderModel(q, _settings.DiscountColumn);
+        var refNote = _refIsAutomatic ? " (next number, given when you export)" : " (typed in the text)";
+        Append($"Ref No. {(q.RefNo.Length > 0 ? q.RefNo : "—")}{refNote}", SystemColors.WindowText);
+        Append($"Buyer: {(q.Buyer.Name.Length > 0 ? q.Buyer.Name : "—")}" +
                (q.OtherRef.Length > 0 ? $"   ·   Other Ref: {q.OtherRef}" : ""), SystemColors.WindowText);
         Append($"Date: {q.Date}   ·   Terms: {(q.Terms.Length > 0 ? q.Terms : "—")}", SystemColors.WindowText);
         for (var i = 0; i < model.Items.Count; i++)
@@ -256,72 +294,117 @@ internal sealed class MainForm : Form
         var engine = _engine;
         if (engine?.Ready != true) return;
         _debounce.Stop();
-        var result = await RefreshAsync();
-        if (!result.IsValid)
+        var preview = await RefreshAsync();
+        if (!preview.IsValid)
         {
-            MessageBox.Show(this, "Please fix these first:\n\n" + string.Join("\n", result.Errors),
+            MessageBox.Show(this, "Please fix these first:\n\n" + string.Join("\n", preview.Errors),
                 "Formater", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
-        var q = result.Quotation;
-        var folder = _settings.PdfFolder is { Length: > 0 } f && Directory.Exists(f) ? f : AppPaths.DefaultPdfFolder;
-        Directory.CreateDirectory(folder);
-        using var dialog = new SaveFileDialog
-        {
-            Title = "Save quotation PDF",
-            Filter = "PDF files (*.pdf)|*.pdf",
-            DefaultExt = "pdf",
-            AddExtension = true,
-            OverwritePrompt = true,
-            InitialDirectory = folder,
-            FileName = SafeFileName($"{q.Title}-{q.RefNo}.pdf"),
-        };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
         _status.Text = "Saving PDF…";
         UseWaitCursor = true;
-        bool saved;
+        _export.Enabled = false;
+        ExportOutcome outcome;
         try
         {
-            saved = await engine.PrintAsync(dialog.FileName);
+            // Parse again: the preview filled in a provisional number.
+            var text = _input.Text;
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var parsed = QuotationInput.Read(text, _settings, today);
+            outcome = await QuotationExporter.ExportAsync(engine, _register, _settings, parsed, text, today);
         }
         catch (Exception ex)
         {
-            saved = false;
-            _status.Text = "PDF not saved: " + ex.Message;
+            outcome = ExportOutcome.Fail(ex.Message);
         }
         finally
         {
             UseWaitCursor = false;
         }
 
-        if (!saved)
+        if (!outcome.Ok)
         {
-            MessageBox.Show(this, $"Could not save {dialog.FileName}.\n\nIf the PDF is open in another program, close it and try again.",
+            _status.Text = "PDF not saved";
+            MessageBox.Show(this, "The PDF was not saved and no number was used.\n\n" + outcome.Message,
                 "Formater", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            await RefreshAsync();
             return;
         }
 
-        _status.Text = "Saved " + dialog.FileName;
-        _settings.PdfFolder = Path.GetDirectoryName(dialog.FileName);
-        TrySaveSettings();
-        if (_settings.OpenPdfAfterExport)
+        _status.Text = $"Saved {outcome.Ref} — {outcome.ArchivePath}";
+        var toOpen = outcome.ArchivePath;
+        if (_settings.AskForCopyLocation) toOpen = SaveCopy(outcome) ?? toOpen;
+        if (_settings.OpenPdfAfterExport) OpenFile(toOpen);
+        await RefreshAsync(); // the preview moves on to the next number
+    }
+
+    /// <summary>Asks where to save a copy of the archived PDF. Returns the copy's path, or null.</summary>
+    private string? SaveCopy(ExportOutcome outcome)
+    {
+        var folder = _settings.PdfFolder is { Length: > 0 } f && Directory.Exists(f) ? f : AppPaths.DefaultPdfFolder;
+        try
         {
-            try
-            {
-                Process.Start(new ProcessStartInfo(dialog.FileName) { UseShellExecute = true });
-            }
-            catch (System.ComponentModel.Win32Exception)
-            {
-                // No PDF viewer installed; the file is saved anyway.
-            }
+            Directory.CreateDirectory(folder);
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        }
+        using var dialog = new SaveFileDialog
+        {
+            Title = $"{outcome.Ref} is saved. Save a copy too?",
+            Filter = "PDF files (*.pdf)|*.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+            OverwritePrompt = true,
+            InitialDirectory = folder,
+            FileName = Path.GetFileName(outcome.ArchivePath),
+        };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return null;
+        try
+        {
+            if (!string.Equals(Path.GetFullPath(dialog.FileName), Path.GetFullPath(outcome.ArchivePath), StringComparison.OrdinalIgnoreCase))
+                File.Copy(outcome.ArchivePath, dialog.FileName, overwrite: true);
+            _settings.PdfFolder = Path.GetDirectoryName(dialog.FileName);
+            TrySaveSettings();
+            _status.Text = $"Saved {outcome.Ref} — copy in {dialog.FileName}";
+            return dialog.FileName;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(this, $"The copy could not be saved ({ex.Message}).\n\nThe PDF is safely kept in:\n{outcome.ArchivePath}",
+                "Formater", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return null;
+        }
+    }
+
+    internal static void OpenFile(string path)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            // No PDF viewer installed; the file is saved anyway.
+        }
+    }
+
+    private void ShowHistory()
+    {
+        using var form = new HistoryForm(_register, text =>
+        {
+            _input.Text = text;
+            _input.Focus();
+        });
+        form.ShowDialog(this);
+        _ = RefreshAsync();
     }
 
     private void EditSettings()
     {
-        using var form = new SettingsForm(_settings);
+        using var form = new SettingsForm(_settings, _register);
         if (form.ShowDialog(this) != DialogResult.OK) return;
         _settings = form.Result;
         TrySaveSettings();
@@ -351,12 +434,5 @@ internal sealed class MainForm : Form
         {
             // The draft is a convenience only.
         }
-    }
-
-    internal static string SafeFileName(string name)
-    {
-        var invalid = Path.GetInvalidFileNameChars().Concat(['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
-        var clean = new string(name.Select(c => invalid.Contains(c) ? '-' : c).ToArray()).Trim();
-        return clean.Length > 0 ? clean : "Quotation.pdf";
     }
 }
